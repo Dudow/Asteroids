@@ -13,6 +13,11 @@
             const SHIP_SIZE = 30
             const SHIP_THRUST = 5
             const TURN_SPEED = 360
+            const ASTEROIDS = 3
+            const ASTEROIDS_JAG = 0.3
+            const ASTEROIDS_SIZE = 100
+            const ASTEROIDS_SPEED = 50
+            const ASTEROIDS_VERT = 10
 
             var canv = document.getElementById("gameCanvas")
             var ctx = canv.getContext("2d")
@@ -30,10 +35,49 @@
                 }
             }
 
+            var asteroids = []
+            createAsteroidBelt()
+
             document.addEventListener("keydown", keyDown)
             document.addEventListener("keyup", keyUp)
 
             setInterval(update, 1000/FPS);
+
+            function createAsteroidBelt(){
+                asteroids = []
+                var x, y
+                for(var i = 0; i < ASTEROIDS; i++){
+                    do{
+                        x = Math.floor(Math.random() * canv.width)
+                        y = Math.floor(Math.random() * canv.height)
+                    }while(distBetweenPoints(ship.x, ship.y, x, y) < ASTEROIDS_SIZE * 2 + ship.r)
+                    
+                    asteroids.push(newAsteroid(x, y))
+                }
+            }
+
+            function distBetweenPoints(x1, y1, x2, y2){
+                return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2))
+            }
+
+            function newAsteroid(x,y){
+                var roid = {
+                    x: x,
+                    y: y,
+                    xv: Math.random() * ASTEROIDS_SPEED / FPS * (Math.random() < 0.5 ? 1 : -1),
+                    yv: Math.random() * ASTEROIDS_SPEED / FPS * (Math.random() < 0.5 ? 1 : -1),
+                    r: ASTEROIDS_SIZE / 2,
+                    a: Math.random() * Math.PI * 2,
+                    vert: Math.floor(Math.random() * (ASTEROIDS_VERT + 1) + ASTEROIDS_VERT / 2),
+                    offs: []
+                }
+
+                for(var i = 0; i < roid.vert; i++){
+                    roid.offs.push(Math.random() * ASTEROIDS_JAG * 2 + 1 - ASTEROIDS_JAG)
+                }
+
+                return roid
+            }
 
             function keyDown(/** @type {keyboardEvent} */ ev){
                 switch(ev.keyCode){
@@ -112,6 +156,49 @@
                 )
                 ctx.closePath()
                 ctx.stroke()
+
+                ctx.strokeStyle = "slategray"
+                ctx.lineWidth = SHIP_SIZE / 20
+                var x, y, r, a, vert, offs
+                for(var i = 0; i < asteroids.length; i++){
+                    x = asteroids[i].x
+                    y = asteroids[i].y
+                    r = asteroids[i].r
+                    a = asteroids[i].a
+                    vert = asteroids[i].vert
+                    offs = asteroids[i].offs
+
+                    ctx.beginPath()
+                    ctx.moveTo(
+                        x + r * offs[0] * Math.cos(a),
+                        y + r *  offs[0] * Math.sin(a)
+                    )
+
+                    for (var j = 1; j < vert; j++) {                        
+                        ctx.lineTo(
+                            x + r * offs[j] * Math.cos(a + j * Math.PI * 2 / vert),
+                            y + r * offs[j] * Math.sin(a + j * Math.PI * 2 / vert)
+                        )
+                    }
+
+                    ctx.closePath()
+                    ctx.stroke()
+
+                    asteroids[i].x += asteroids[i].xv
+                    asteroids[i].y += asteroids[i].yv
+
+                    if(asteroids[i].x < 0 - asteroids[i].r){
+                        asteroids[i].x = canv.width + asteroids[i].r
+                    } else if(asteroids[i].x > canv.width + asteroids[i].r){
+                        asteroids[i].x < 0 - asteroids[i].r
+                    }
+
+                    if(asteroids[i].y < 0 - asteroids[i].r){
+                        asteroids[i].y = canv.height + asteroids[i].r
+                    } else if(asteroids[i].y > canv.height + asteroids[i].r){
+                        asteroids[i].y < 0 - asteroids[i].r
+                    }
+                }
 
                 ship.a += ship.rot
 
